@@ -1,3 +1,18 @@
+/**
+ * @aci-keep
+ *
+ * ROLE(TEST): 本文件是可执行规格，生产代码是其约束对象。
+ * INPUT: 被测签名、状态、依赖、副作用与已知异常。
+ * OUTPUT: 可复现且证据闭合的断言结果。
+ * MUST: L0环境可逆、L1正向、L2边界、L3负向完备（详见脚手架命令）。
+ * MUST NOT: skip/todo、空断言、恒真断言、仅验证实现细节。
+ * ERROR: 失败必须暴露契约差异；不得捕获后忽略。
+ * TEST: 每个场景独立验证输入、状态、时间或外部契约中的至少一维。
+ * SCOPE(UNIT): Vitest单元；隔离外部依赖，验证单个模块的返回、异常与副作用。
+ * MUST: describe/it/expect；使用vi.mock/vi.spyOn建立可控边界。
+ * MUST NOT: curl、整栈启动、真实DB、跨模块协作断言。
+ */
+
 /* oxlint-disable no-restricted-syntax */
 import { assert, describe, it } from "@effect/vitest"
 import { assertExitFailure, assertSuccess, assertTrue, deepStrictEqual, strictEqual } from "@effect/vitest/utils"
@@ -736,6 +751,24 @@ describe("Stream", () => {
       Effect.gen(function*() {
         const result = yield* Stream.never.pipe(
           Stream.take(0),
+          Stream.runCollect
+        )
+        assert.deepStrictEqual(result, [])
+      }))
+
+    it.effect("take - treating NaN as a non-positive count", () =>
+      Effect.gen(function*() {
+        const result = yield* Stream.make(1, 2, 3).pipe(
+          Stream.take(Number.NaN),
+          Stream.runCollect
+        )
+        assert.deepStrictEqual(result, [])
+      }))
+
+    it.effect("take - NaN short-circuits stream evaluation", () =>
+      Effect.gen(function*() {
+        const result = yield* Stream.never.pipe(
+          Stream.take(Number.NaN),
           Stream.runCollect
         )
         assert.deepStrictEqual(result, [])
